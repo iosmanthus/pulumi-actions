@@ -4,7 +4,7 @@ import { DeleteItemCommand, DynamoDBClient, PutItemCommand } from "@aws-sdk/clie
 const tableName = 'LocksTable';
 const client = new DynamoDBClient({ region: 'us-east-1' });
 const lockID = 'pulumi-global-lock';
-const defaultTTL = 10;
+const defaultTTL = 1800;
 
 export async function acquireGlobalLock(owner: string): Promise<void> {
     for (; ;) {
