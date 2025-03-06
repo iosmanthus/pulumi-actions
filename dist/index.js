@@ -123612,35 +123612,37 @@ function acquireGlobalLock(owner) {
                     TableName: tableName,
                     Item: {
                         "LockID": { S: lockID },
-                        "Owner": { S: owner },
+                        "LockOwner": { S: owner },
                         "ExpireTime": { N: ttl.toString() }
                     },
                     ConditionExpression: "attribute_not_exists(LockID) OR ExpireTime < :now",
                     ExpressionAttributeValues: { ":now": { N: now.toString() } }
                 }));
-                core.debug(`pulumi global lock acquired: ${owner}`);
+                core.info(`pulumi global lock acquired: ${owner}`);
                 return;
             }
             catch (e) {
-                core.debug(`waiting for pulumi global lock: ${owner}: ${e}`);
+                core.info(`waiting for pulumi global lock: ${owner}: ${e}`);
                 yield new Promise(resolve => setTimeout(resolve, 5000));
             }
         }
     });
 }
-function releaseGlobalLock() {
+function releaseGlobalLock(owner) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield client.send(new dist_cjs.DeleteItemCommand({
                 TableName: tableName,
                 Key: {
                     "LockID": { S: lockID },
-                }
+                },
+                ConditionExpression: "LockOwner = :owner",
+                ExpressionAttributeValues: { ":owner": { S: owner } }
             }));
-            core.debug('pulumi global lock released');
+            core.info('pulumi global lock released');
         }
         catch (e) {
-            core.debug(`failed to release pulumi global lock: ${e}`);
+            core.info(`failed to release pulumi global lock: ${e}`);
         }
     });
 }
@@ -123684,13 +123686,14 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     // Attempt to parse the full configuration and run the action.
     const config = yield makeConfig();
     core.debug('Configuration is loaded');
-    try {
-        const now = Date.now();
-        yield acquireGlobalLock(`${config.stackName}-${now}`);
+    const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
+    const isPost = !!core.getState('isPost');
+    if (!isPost) {
+        yield acquireGlobalLock(lockOwner);
         yield runAction(config);
     }
-    finally {
-        yield releaseGlobalLock();
+    else {
+        yield releaseGlobalLock(lockOwner);
     }
 });
 // installOnly is the main entrypoint of the program when the user

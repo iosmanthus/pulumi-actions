@@ -32,12 +32,13 @@ const main = async () => {
   // Attempt to parse the full configuration and run the action.
   const config = await makeConfig();
   core.debug('Configuration is loaded');
-  try {
-    const now = Date.now();
-    await acquireGlobalLock(`${config.stackName}-${now}`);
+  const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
+  const isPost = !!core.getState('isPost');
+  if (!isPost) {
+    await acquireGlobalLock(lockOwner);
     await runAction(config);
-  } finally {
-    await releaseGlobalLock();
+  } else {
+    await releaseGlobalLock(lockOwner);
   }
 };
 

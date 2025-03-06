@@ -15,31 +15,33 @@ export async function acquireGlobalLock(owner: string): Promise<void> {
                 TableName: tableName,
                 Item: {
                     "LockID": { S: lockID },
-                    "Owner": { S: owner },
+                    "LockOwner": { S: owner },
                     "ExpireTime": { N: ttl.toString() }
                 },
                 ConditionExpression: "attribute_not_exists(LockID) OR ExpireTime < :now",
                 ExpressionAttributeValues: { ":now": { N: now.toString() } }
             }));
-            core.debug(`pulumi global lock acquired: ${owner}`);
+            core.info(`pulumi global lock acquired: ${owner}`);
             return
         } catch (e) {
-            core.debug(`waiting for pulumi global lock: ${owner}: ${e}`);
+            core.info(`waiting for pulumi global lock: ${owner}: ${e}`);
             await new Promise(resolve => setTimeout(resolve, 5000));
         }
     }
 }
 
-export async function releaseGlobalLock(): Promise<void> {
+export async function releaseGlobalLock(owner: string): Promise<void> {
     try {
         await client.send(new DeleteItemCommand({
             TableName: tableName,
             Key: {
                 "LockID": { S: lockID },
-            }
+            },
+            ConditionExpression: "LockOwner = :owner",
+            ExpressionAttributeValues: { ":owner": { S: owner } }
         }))
-        core.debug('pulumi global lock released');
+        core.info('pulumi global lock released');
     } catch (e) {
-        core.debug(`failed to release pulumi global lock: ${e}`);
+        core.info(`failed to release pulumi global lock: ${e}`);
     }
 }

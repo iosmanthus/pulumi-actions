@@ -113,3 +113,4 @@ runs:
   # GitHub Enterprise versions < 3.4
   using: 'node16'
   main: 'dist/index.js'
+  post: 'dist/index.js'
