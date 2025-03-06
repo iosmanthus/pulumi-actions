@@ -17,7 +17,13 @@ import {
 import { environmentVariables } from './libs/envs';
 import { handlePullRequestMessage } from './libs/pr';
 import * as pulumiCli from './libs/pulumi-cli';
-import { acquireGlobalLock, releaseGlobalLock } from './lock'
+import {
+  LockError,
+  acquireGlobalLock,
+  releaseGlobalLock,
+  releaseStackLock,
+  tryAcquireStackLock,
+} from './lock';
 import { login } from './login';
 
 const main = async () => {
@@ -32,12 +38,28 @@ const main = async () => {
   // Attempt to parse the full configuration and run the action.
   const config = await makeConfig();
   core.debug('Configuration is loaded');
-  try {
-    const now = Date.now();
-    await acquireGlobalLock(`${config.stackName}-${now}`);
+  if (config.lockMode === 'retry') {
+    try {
+      const now = Date.now();
+      await acquireGlobalLock(`${config.stackName}-${now}`);
+      await runAction(config);
+    } finally {
+      await releaseGlobalLock();
+    }
+  } else if (config.lockMode === 'abort') {
+    try {
+      await tryAcquireStackLock(config);
+      await runAction(config);
+    } catch (e) {
+      if (e instanceof LockError) {
+        core.setFailed('Lock mode is set to abort. Exiting.');
+        throw e;
+      }
+    } finally {
+      await releaseStackLock(config);
+    }
+  } else {
     await runAction(config);
-  } finally {
-    await releaseGlobalLock();
   }
 };
 
@@ -134,7 +156,7 @@ const runAction = async (config: Config): Promise<void> => {
   if (config.commentOnSummary) {
     await core.summary
       .addHeading(`Pulumi ${config.stackName} results`)
-      .addCodeBlock(output, "diff")
+      .addCodeBlock(output, 'diff')
       .write();
   }
 
