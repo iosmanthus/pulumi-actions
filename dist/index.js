@@ -123689,9 +123689,8 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
     const isPost = !!core.getState('isPost');
     if (!isPost) {
-        yield acquireGlobalLock(lockOwner);
-        // Once we acquire the lock, we need to save the state to ensure that we release the lock
         core.saveState('isPost', 'true');
+        yield acquireGlobalLock(lockOwner);
         yield runAction(config);
     }
     else {
