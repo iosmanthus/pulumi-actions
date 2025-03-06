@@ -123688,6 +123688,7 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     core.debug('Configuration is loaded');
     const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
     const isPost = !!core.getState('isPost');
+    core.info(`isPost: ${isPost}`);
     if (!isPost) {
         yield acquireGlobalLock(lockOwner);
         yield runAction(config);
