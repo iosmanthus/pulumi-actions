@@ -34,9 +34,10 @@ const main = async () => {
   core.debug('Configuration is loaded');
   const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
   const isPost = !!core.getState('isPost');
-  core.info(`isPost: ${isPost}`);
   if (!isPost) {
     await acquireGlobalLock(lockOwner);
+    // Once we acquire the lock, we need to save the state to ensure that we release the lock
+    core.saveState('isPost', 'true');
     await runAction(config);
   } else {
     await releaseGlobalLock(lockOwner);
