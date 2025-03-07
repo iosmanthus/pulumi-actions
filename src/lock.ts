@@ -1,22 +1,29 @@
 import * as core from '@actions/core';
 import { DeleteItemCommand, DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 
-const tableName = 'LocksTable';
 const client = new DynamoDBClient({ region: 'us-east-1' });
-const lockID = 'pulumi-global-lock';
+const defaultTableName = 'LocksTable';
 const defaultTTL = 1800;
+const lockID = 'pulumi-global-lock';
 
-export async function acquireGlobalLock(owner: string): Promise<void> {
+interface LockOptions {
+    ttl?: number;
+    tableName?: string;
+}
+
+export async function acquireGlobalLock(owner: string, options: LockOptions): Promise<void> {
+    const tableName = options.tableName ? options.tableName : defaultTableName;
+    const ttl = options.ttl ? options.ttl : defaultTTL;
     for (; ;) {
         try {
             const now = Math.floor(Date.now() / 1000);
-            const ttl = now + defaultTTL;
+            const expireTime = now + ttl;
             await client.send(new PutItemCommand({
                 TableName: tableName,
                 Item: {
                     "LockID": { S: lockID },
                     "LockOwner": { S: owner },
-                    "ExpireTime": { N: ttl.toString() }
+                    "ExpireTime": { N: expireTime.toString() }
                 },
                 ConditionExpression: "attribute_not_exists(LockID) OR ExpireTime < :now",
                 ExpressionAttributeValues: { ":now": { N: now.toString() } }
@@ -30,7 +37,8 @@ export async function acquireGlobalLock(owner: string): Promise<void> {
     }
 }
 
-export async function releaseGlobalLock(owner: string): Promise<void> {
+export async function releaseGlobalLock(owner: string, options: LockOptions): Promise<void> {
+    const tableName = options.tableName ? options.tableName : defaultTableName;
     try {
         await client.send(new DeleteItemCommand({
             TableName: tableName,

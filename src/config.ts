@@ -52,6 +52,8 @@ export function makeConfig() {
     // @see https://github.com/pulumi/actions/pull/912
     configMap: getYAMLInput<ConfigMap>('config-map'),
     editCommentOnPr: getBooleanInput('edit-pr-comment'),
+    ddbLocksTable: getInput('ddb-locks-table'),
+    ddbLocksTTL: getNumberInput('ddb-locks-ttl'),
 
     options: {
       parallel: getNumberInput('parallel', {}),

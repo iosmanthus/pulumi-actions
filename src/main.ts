@@ -32,18 +32,22 @@ const main = async () => {
   // Attempt to parse the full configuration and run the action.
   const config = await makeConfig();
   core.debug('Configuration is loaded');
-  const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
+  const lockOpts = {
+    tableName: config.ddbLocksTable,
+    ttl: config.ddbLocksTTL
+  };
+  const lockOwner = `${process.env.GITHUB_REPOSITORY}/${config.stackName}/${process.env.GITHUB_RUN_ID}`;
   const isPost = !!core.getState('isPost');
   if (!isPost) {
     core.saveState('isPost', 'true');
     try {
-      await acquireGlobalLock(lockOwner);
+      await acquireGlobalLock(lockOwner, lockOpts);
       await runAction(config);
     } finally {
-      await releaseGlobalLock(lockOwner);
+      await releaseGlobalLock(lockOwner, lockOpts);
     }
   } else {
-    await releaseGlobalLock(lockOwner);
+    await releaseGlobalLock(lockOwner, lockOpts);
   }
 };
 
