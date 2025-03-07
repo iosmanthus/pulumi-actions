@@ -123690,8 +123690,13 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     const isPost = !!core.getState('isPost');
     if (!isPost) {
         core.saveState('isPost', 'true');
-        yield acquireGlobalLock(lockOwner);
-        yield runAction(config);
+        try {
+            yield acquireGlobalLock(lockOwner);
+            yield runAction(config);
+        }
+        finally {
+            yield releaseGlobalLock(lockOwner);
+        }
     }
     else {
         yield releaseGlobalLock(lockOwner);

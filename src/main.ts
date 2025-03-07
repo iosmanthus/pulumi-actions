@@ -36,8 +36,12 @@ const main = async () => {
   const isPost = !!core.getState('isPost');
   if (!isPost) {
     core.saveState('isPost', 'true');
-    await acquireGlobalLock(lockOwner);
-    await runAction(config);
+    try {
+      await acquireGlobalLock(lockOwner);
+      await runAction(config);
+    } finally {
+      await releaseGlobalLock(lockOwner);
+    }
   } else {
     await releaseGlobalLock(lockOwner);
   }
