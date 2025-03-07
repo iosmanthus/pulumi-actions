@@ -123642,6 +123642,10 @@ function releaseGlobalLock(owner) {
             core.info('pulumi global lock released');
         }
         catch (e) {
+            if (e.name === 'ConditionalCheckFailedException') {
+                core.info(`pulumi global lock has already been released, no action needed`);
+                return;
+            }
             core.info(`failed to release pulumi global lock: ${e}`);
         }
     });
