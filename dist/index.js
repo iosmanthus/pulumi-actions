@@ -123293,6 +123293,8 @@ function makeConfig() {
         // @see https://github.com/pulumi/actions/pull/912
         configMap: (0,main.getYAMLInput)('config-map'),
         editCommentOnPr: (0,main.getBooleanInput)('edit-pr-comment'),
+        ddbLocksTable: (0,main.getInput)('ddb-locks-table'),
+        ddbLocksTTL: (0,main.getNumberInput)('ddb-locks-ttl'),
         options: {
             parallel: (0,main.getNumberInput)('parallel', {}),
             message: (0,main.getInput)('message'),
@@ -123598,22 +123600,24 @@ var dist_cjs = __nccwpck_require__(23363);
 
 
 
-const tableName = 'LocksTable';
 const client = new dist_cjs.DynamoDBClient({ region: 'us-east-1' });
-const lockID = 'pulumi-global-lock';
+const defaultTableName = 'LocksTable';
 const defaultTTL = 1800;
-function acquireGlobalLock(owner) {
+const lockID = 'pulumi-global-lock';
+function acquireGlobalLock(owner, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const tableName = options.tableName ? options.tableName : defaultTableName;
+        const ttl = options.ttl ? options.ttl : defaultTTL;
         for (;;) {
             try {
                 const now = Math.floor(Date.now() / 1000);
-                const ttl = now + defaultTTL;
+                const expireTime = now + ttl;
                 yield client.send(new dist_cjs.PutItemCommand({
                     TableName: tableName,
                     Item: {
                         "LockID": { S: lockID },
                         "LockOwner": { S: owner },
-                        "ExpireTime": { N: ttl.toString() }
+                        "ExpireTime": { N: expireTime.toString() }
                     },
                     ConditionExpression: "attribute_not_exists(LockID) OR ExpireTime < :now",
                     ExpressionAttributeValues: { ":now": { N: now.toString() } }
@@ -123628,8 +123632,9 @@ function acquireGlobalLock(owner) {
         }
     });
 }
-function releaseGlobalLock(owner) {
+function releaseGlobalLock(owner, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        const tableName = options.tableName ? options.tableName : defaultTableName;
         try {
             yield client.send(new dist_cjs.DeleteItemCommand({
                 TableName: tableName,
@@ -123690,20 +123695,24 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     // Attempt to parse the full configuration and run the action.
     const config = yield makeConfig();
     core.debug('Configuration is loaded');
-    const lockOwner = `${config.stackName}-${process.env.GITHUB_RUN_ID}`;
+    const lockOpts = {
+        tableName: config.ddbLocksTable,
+        ttl: config.ddbLocksTTL
+    };
+    const lockOwner = `${process.env.GITHUB_REPOSITORY}/${config.stackName}/${process.env.GITHUB_RUN_ID}`;
     const isPost = !!core.getState('isPost');
     if (!isPost) {
         core.saveState('isPost', 'true');
         try {
-            yield acquireGlobalLock(lockOwner);
+            yield acquireGlobalLock(lockOwner, lockOpts);
             yield runAction(config);
         }
         finally {
-            yield releaseGlobalLock(lockOwner);
+            yield releaseGlobalLock(lockOwner, lockOpts);
         }
     }
     else {
-        yield releaseGlobalLock(lockOwner);
+        yield releaseGlobalLock(lockOwner, lockOpts);
     }
 });
 // installOnly is the main entrypoint of the program when the user
