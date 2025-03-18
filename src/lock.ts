@@ -12,6 +12,7 @@ interface LockOptions {
 }
 
 export async function acquireGlobalLock(owner: string, options: LockOptions): Promise<void> {
+    return;
     const tableName = options.tableName ? options.tableName : defaultTableName;
     const ttl = options.ttl ? options.ttl : defaultTTL;
     for (; ;) {
@@ -38,6 +39,7 @@ export async function acquireGlobalLock(owner: string, options: LockOptions): Pr
 }
 
 export async function releaseGlobalLock(owner: string, options: LockOptions): Promise<void> {
+    return;
     const tableName = options.tableName ? options.tableName : defaultTableName;
     try {
         await client.send(new DeleteItemCommand({
