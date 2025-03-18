@@ -123606,6 +123606,7 @@ const defaultTTL = 1800;
 const lockID = 'pulumi-global-lock';
 function acquireGlobalLock(owner, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        return;
         const tableName = options.tableName ? options.tableName : defaultTableName;
         const ttl = options.ttl ? options.ttl : defaultTTL;
         for (;;) {
@@ -123634,6 +123635,7 @@ function acquireGlobalLock(owner, options) {
 }
 function releaseGlobalLock(owner, options) {
     return __awaiter(this, void 0, void 0, function* () {
+        return;
         const tableName = options.tableName ? options.tableName : defaultTableName;
         try {
             yield client.send(new dist_cjs.DeleteItemCommand({
