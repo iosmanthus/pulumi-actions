@@ -123701,9 +123701,9 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
         tableName: config.ddbLocksTable,
         ttl: config.ddbLocksTTL
     };
-    if (config.stackName.startsWith('dev')) {
-        throw new Error("Dev stacks are cordoned");
-    }
+    // if (config.stackName.startsWith('dev')) {
+    //   throw new Error("Dev stacks are cordoned");
+    // }
     const lockOwner = `${process.env.GITHUB_REPOSITORY}/${config.stackName}/${process.env.GITHUB_RUN_ID}`;
     const isPost = !!core.getState('isPost');
     if (!isPost) {
