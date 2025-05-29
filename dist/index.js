@@ -123703,9 +123703,9 @@ const main_main = () => __awaiter(void 0, void 0, void 0, function* () {
     };
     const repo = process.env.GITHUB_REPOSITORY;
     const stackName = config.stackName;
-    if (config.cloudUrl === "" && repo == "tidbcloud/aws-shared-provider" && stackName.startsWith('dev')) {
-        throw new Error(`Stack ${stackName} is cordoned`);
-    }
+    // if (config.cloudUrl === "" && repo == "tidbcloud/aws-shared-provider" && stackName.startsWith('dev')) {
+    //   throw new Error(`Stack ${stackName} is cordoned`);
+    // }
     const lockOwner = `${repo}/${stackName}/${process.env.GITHUB_RUN_ID}`;
     const isPost = !!core.getState('isPost');
     if (!isPost) {
