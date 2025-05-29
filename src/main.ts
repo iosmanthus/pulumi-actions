@@ -36,10 +36,12 @@ const main = async () => {
     tableName: config.ddbLocksTable,
     ttl: config.ddbLocksTTL
   };
-  // if (config.cloudUrl === "" && config.stackName.startsWith('dev')) {
-  //   throw new Error("Dev stacks are cordoned");
-  // }
-  const lockOwner = `${process.env.GITHUB_REPOSITORY}/${config.stackName}/${process.env.GITHUB_RUN_ID}`;
+  const repo = process.env.GITHUB_REPOSITORY;
+  const stackName = config.stackName;
+  if (config.cloudUrl === "" && repo == "tidbcloud/aws-shared-provider" && stackName.startsWith('dev')) {
+    throw new Error(`Stack ${stackName} is cordoned`);
+  }
+  const lockOwner = `${repo}/${stackName}/${process.env.GITHUB_RUN_ID}`;
   const isPost = !!core.getState('isPost');
   if (!isPost) {
     core.saveState('isPost', 'true');
