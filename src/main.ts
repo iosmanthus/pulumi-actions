@@ -38,7 +38,7 @@ const main = async () => {
   };
   const repo = process.env.GITHUB_REPOSITORY;
   const stackName = config.stackName;
-  if (config.cloudUrl === "" && repo == "tidbcloud/aws-shared-provider" && stackName.startsWith('dev')) {
+  if (config.cloudUrl === "" && repo == "tidbcloud/aws-shared-provider" && stackName.startsWith('staging')) {
     throw new Error(`Stack ${stackName} is cordoned`);
   }
   const lockOwner = `${repo}/${stackName}/${process.env.GITHUB_RUN_ID}`;
